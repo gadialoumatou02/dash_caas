@@ -1,7 +1,6 @@
 # main.py
 import streamlit as st
 
-st.set_page_config(page_title="MyDash", layout="wide")
 
 # Etat partagé
 if "dataframes" not in st.session_state:
