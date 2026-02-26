@@ -21,9 +21,9 @@ if "selected_file" not in st.session_state:
 # -----------------------------
 # Navigation PRO (Streamlit >= 1.32)
 # -----------------------------
-home_page = st.Page("app.py", title="Home", icon="🏠")                 # cette page (home)
-display_page = st.Page("pages/1_Affichage.py", title="Affichage", icon="📊")
-analyse_page = st.Page("pages/2_Calcul.py", title="Analyse", icon="🧮")
+home_page = st.Page("main.py", title="Home", icon="🏠")                 # cette page (home)
+display_page = st.Page("pages/display.py", title="Affichage", icon="📊")
+analyse_page = st.Page("pages/calcul.py", title="Analyse", icon="🧮")
 
 pg = st.navigation([home_page, display_page, analyse_page])
 pg.run()
