@@ -1,192 +1,204 @@
-# pages/1_Affichage.py
+# pages/2_Calcul.py
 
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import io
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LinearRegression
 
-st.header("📊 Dashboard - Affichage des données")
+st.header("🧮 Calculs & Analyses")
 
 # =============================
 # INITIALISATION SESSION STATE
 # =============================
 
-if "dataframes" not in st.session_state:
-    st.session_state.dataframes = {}
-
-if "current_file" not in st.session_state:
-    st.session_state.current_file = None
-
-if "graphs" not in st.session_state:
-    st.session_state.graphs = []
-
-# =============================
-# SIDEBAR - IMPORT DATA
-# =============================
-
-with st.sidebar:
-    st.title("📂 Data Manager")
-
-    uploaded_files = st.file_uploader(
-        "Importer CSV ou Excel",
-        type=["csv", "xlsx"],
-        accept_multiple_files=True
-    )
-
-    if uploaded_files:
-        for file in uploaded_files:
-            try:
-                if file.name.endswith(".csv"):
-                    df = pd.read_csv(file)
-                else:
-                    df = pd.read_excel(file)
-
-                st.session_state.dataframes[file.name] = df
-                st.success(f"{file.name} chargé.")
-            except Exception as e:
-                st.error(f"Erreur avec {file.name}: {e}")
-
-    if st.session_state.dataframes:
-        st.markdown("### 📁 Fichiers disponibles")
-        st.write(list(st.session_state.dataframes.keys()))
-
-# =============================
-# AUCUNE DONNÉE
-# =============================
-
-if not st.session_state.dataframes:
-    st.info("Importe un fichier CSV ou Excel pour commencer.")
+if "dataframes" not in st.session_state or not st.session_state.dataframes:
+    st.info("Charge d'abord des fichiers CSV ou Excel dans la page Affichage.")
     st.stop()
 
+if "results" not in st.session_state:
+    st.session_state.results = {}
+
+if "selected_file" not in st.session_state:
+    st.session_state.selected_file = None
+
 # =============================
-# SELECTION FICHIER
+# SELECTION DU FICHIER
 # =============================
 
 file_list = list(st.session_state.dataframes.keys())
 
-st.session_state.current_file = st.selectbox(
-    "Sélectionner un fichier",
-    file_list
+selected_index = 0
+if st.session_state.selected_file in file_list:
+    selected_index = file_list.index(st.session_state.selected_file)
+
+file_name = st.selectbox(
+    "Choisir un fichier",
+    file_list,
+    index=selected_index
 )
 
-df = st.session_state.dataframes[st.session_state.current_file]
-df_filtered = df.copy()
+st.session_state.selected_file = file_name
+df = st.session_state.dataframes[file_name]
+
+st.subheader("Aperçu du dataset")
+st.dataframe(df.head(200), use_container_width=True)
 
 # =============================
-# FILTRES TYPE POWER BI
+# CHOIX OPERATION
 # =============================
 
-st.sidebar.markdown("## 🎛 Filtres")
+operation = st.selectbox(
+    "Choisir une opération",
+    [
+        "Calcul simple",
+        "Analyse en Composantes Principales (ACP)",
+        "Modèle de régression linéaire",
+        "Formule personnalisée"
+    ]
+)
 
-for col in df.columns:
-    if df[col].dtype == "object" or df[col].nunique() < 20:
-        values = st.sidebar.multiselect(
-            f"{col}",
-            df[col].dropna().unique()
+# =============================
+# CALCUL SIMPLE
+# =============================
+
+if operation == "Calcul simple":
+
+    num = df.select_dtypes(include="number")
+
+    if num.empty:
+        st.error("Aucune colonne numérique disponible.")
+    else:
+        res = num.agg(["sum", "mean", "std"]).T
+        res.columns = ["Somme", "Moyenne", "Écart-type"]
+
+        st.subheader("Résultats")
+        st.dataframe(res, use_container_width=True)
+
+        st.session_state.results[file_name] = res
+
+
+# =============================
+# ACP
+# =============================
+
+elif operation == "Analyse en Composantes Principales (ACP)":
+
+    num = df.select_dtypes(include="number").dropna()
+
+    if num.shape[1] < 2:
+        st.error("Il faut au moins deux colonnes numériques pour effectuer une ACP.")
+    else:
+        n_components = st.slider(
+            "Nombre de composantes",
+            2,
+            min(6, num.shape[1]),
+            2
         )
-        if values:
-            df_filtered = df_filtered[df_filtered[col].isin(values)]
 
-    # elif pd.api.types.is_numeric_dtype(df[col]):
-    #     min_val = float(df[col].min())
-    #     max_val = float(df[col].max())
-    #     slider = st.sidebar.slider(
-    #         f"{col}",
-    #         min_val,
-    #         max_val,
-    #         (min_val, max_val)
-    #     )
-    #     df_filtered = df_filtered[
-    #         (df_filtered[col] >= slider[0]) &
-    #         (df_filtered[col] <= slider[1])
-    #     ]
-# =============================
-# TABLE DONNÉES
-# =============================
+        pca = PCA(n_components=n_components)
+        components = pca.fit_transform(num)
 
-st.divider()
-st.subheader("📋 Données")
+        st.subheader("Variance expliquée")
+        st.write(pca.explained_variance_ratio_)
 
-st.dataframe(df_filtered, use_container_width=True)
+        comp_df = pd.DataFrame(
+            components,
+            columns=[f"PC{i+1}" for i in range(n_components)]
+        )
+
+        st.subheader("Composantes principales (aperçu)")
+        st.dataframe(comp_df.head(50), use_container_width=True)
+
+        st.session_state.results[file_name] = {
+            "variance_expliquee": pca.explained_variance_ratio_,
+            "composantes": comp_df
+        }
+
 
 # =============================
-# KPI CARDS
+# REGRESSION LINEAIRE
 # =============================
 
-st.subheader("📌 Indicateurs Clés")
+elif operation == "Modèle de régression linéaire":
 
-num_cols = df_filtered.select_dtypes(include="number").columns
+    num = df.select_dtypes(include="number").dropna()
 
-if len(num_cols) > 0:
-    kpi_cols = st.columns(min(4, len(num_cols)))
+    if num.shape[1] < 2:
+        st.error("Il faut au moins deux colonnes numériques.")
+    else:
+        y_col = st.selectbox(
+            "Variable cible (Y)",
+            num.columns.tolist(),
+            index=len(num.columns) - 1
+        )
 
-    for i, col in enumerate(num_cols[:4]):
-        with kpi_cols[i]:
-            st.metric(
-                label=col,
-                value=f"{df_filtered[col].sum():,.2f}"
+        x_cols = [c for c in num.columns if c != y_col]
+
+        selected_x = st.multiselect(
+            "Variables explicatives (X)",
+            x_cols,
+            default=x_cols[:min(3, len(x_cols))]
+        )
+
+        if not selected_x:
+            st.warning("Sélectionne au moins une variable X.")
+        else:
+            X = num[selected_x]
+            y = num[y_col]
+
+            model = LinearRegression()
+            model.fit(X, y)
+            score = model.score(X, y)
+
+            st.subheader("Résultats")
+            st.write(f"**R² : {score:.4f}**")
+
+            coef = pd.Series(
+                model.coef_,
+                index=selected_x,
+                name="Coefficient"
             )
 
+            st.dataframe(coef.to_frame(), use_container_width=True)
+
+            st.session_state.results[file_name] = {
+                "R2": score,
+                "coefficients": coef
+            }
+
+
 # =============================
-# ZONE GRAPHIQUE
+# FORMULE PERSONNALISEE
 # =============================
 
-st.divider()
-st.subheader("📈 Visualisation")
+elif operation == "Formule personnalisée":
 
-all_cols = df_filtered.columns.tolist()
-num_cols = df_filtered.select_dtypes(include="number").columns.tolist()
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    chart_type = st.selectbox(
-        "Type graphique",
-        ["Courbe", "Barres", "Scatter", "Circulaire"]
+    st.caption(
+        "Format conseillé : `new_col = `Col A` + `Col B`` "
+        "(mettre les colonnes entre backticks si elles contiennent des espaces)"
     )
 
-with col2:
-    x_axis = st.selectbox("Axe X", all_cols)
+    formula = st.text_input("Formule")
 
-with col3:
-    y_axis = st.selectbox("Axe Y", num_cols if num_cols else all_cols)
+    if st.button("Appliquer la formule"):
 
-# Création graphique dynamique
+        try:
+            if not formula.strip():
+                raise ValueError("Veuillez saisir une formule.")
 
-fig = None
+            # Applique directement sur le dataframe partagé
+            st.session_state.dataframes[file_name].eval(
+                formula,
+                inplace=True,
+                engine="python"
+            )
 
-if chart_type == "Courbe":
-    fig = px.line(df_filtered, x=x_axis, y=y_axis)
+            st.success("Formule appliquée avec succès.")
 
-elif chart_type == "Barres":
-    fig = px.bar(df_filtered, x=x_axis, y=y_axis)
+            st.dataframe(
+                st.session_state.dataframes[file_name].head(200),
+                use_container_width=True
+            )
 
-elif chart_type == "Scatter":
-    fig = px.scatter(df_filtered, x=x_axis, y=y_axis)
-
-elif chart_type == "Circulaire":
-    agg = df_filtered.groupby(x_axis)[y_axis].sum().reset_index()
-    fig = px.pie(agg, names=x_axis, values=y_axis)
-
-if fig:
-    st.plotly_chart(fig, use_container_width=True)
-
-
-
-# =============================
-# EXPORT EXCEL
-# =============================
-
-st.divider()
-st.subheader("📥 Export CSV")
-
-csv_data = df_filtered.to_csv(index=False).encode("utf-8")
-
-st.download_button(
-    label="Télécharger les données filtrées (CSV)",
-    data=csv_data,
-    file_name="export_dashboard.csv",
-    mime="text/csv",
-    key="download_csv"
-)
+        except Exception as e:
+            st.error(f"Erreur : {e}")
