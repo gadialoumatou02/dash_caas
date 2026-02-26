@@ -178,17 +178,15 @@ if fig:
 # EXPORT EXCEL
 # =============================
 
-# st.divider()
-# st.subheader("📥 Export")
+st.divider()
+st.subheader("📥 Export CSV")
 
-# output = io.BytesIO()
+csv_data = df_filtered.to_csv(index=False).encode("utf-8")
 
-# with pd.ExcelWriter(output, engine="openpyxl") as writer:
-#     df_filtered.to_excel(writer, index=False, sheet_name="Export")
-
-# st.download_button(
-#     "Télécharger les données filtrées (Excel)",
-#     data=output.getvalue(),
-#     file_name="export_dashboard.xlsx",
-#     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-# )
+st.download_button(
+    label="Télécharger les données filtrées (CSV)",
+    data=csv_data,
+    file_name="export_dashboard.csv",
+    mime="text/csv",
+    key="download_csv"
+)
