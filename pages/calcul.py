@@ -79,7 +79,7 @@ elif operation == "Formule personnalisée":
             if not formula.strip():
                 raise ValueError("Veuillez saisir une formule.")
             # applique sur la copie dans session_state (comme ton inplace=True)
-            st.session_state.dataframes[file_name].eval(formula, inplace=True)
+            st.session_state.dataframes[file_name].eval(formula, inplace=True, engine="python")
             st.success("Formule appliquée avec succès.")
             st.dataframe(st.session_state.dataframes[file_name].head(200), use_container_width=True)
         except Exception as e:
