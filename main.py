@@ -1,25 +1,15 @@
 # main.py
 import streamlit as st
 
+# init state (optionnel mais utile)
+st.session_state.setdefault("dataframes", {})
+st.session_state.setdefault("current_file", None)
+st.session_state.setdefault("graphs", [])
+st.session_state.setdefault("results", {})
+st.session_state.setdefault("selected_file", None)
 
-# Etat partagé
-if "dataframes" not in st.session_state:
-    st.session_state["dataframes"] = {}
-if "current_file" not in st.session_state:
-    st.session_state["current_file"] = None
-if "graphs" not in st.session_state:
-    st.session_state["graphs"] = []
-if "results" not in st.session_state:
-    st.session_state["results"] = {}
-if "selected_file" not in st.session_state:
-    st.session_state["selected_file"] = None
+home = st.Page("pages/home.py", title="Home", icon="🏠")
+display = st.Page("pages/display.py", title="Affichage", icon="📊")
+analyse = st.Page("pages/calcul.py", title="Analyse", icon="🧮")
 
-# Navigation PRO
-home_page = st.Page("main.py", title="Home", icon="🏠")                 # cette page (home)
-display_page = st.Page("pages/display.py", title="Affichage", icon="📊")
-analyse_page = st.Page("pages/calcul.py", title="Analyse", icon="🧮")
-
-pg = st.navigation([home_page, display_page, analyse_page])
-pg.run()    
-
-
+st.navigation([home, display, analyse]).run()
