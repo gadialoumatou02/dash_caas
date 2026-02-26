@@ -6,7 +6,9 @@ import plotly.express as px
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
-st.header("🧮 Calculs & Analyses")
+
+
+st.header("🧮 Calcul & Analyse")
 
 # =============================
 # INIT SESSION STATE
@@ -164,11 +166,11 @@ elif operation == "Formule personnalisée":
             for col in df_original.columns:
                 safe_col = (
                     col.replace(" ", "_")
-                       .replace("-", "_")
-                       .replace("/", "_")
-                       .replace(".", "_")
-                       .replace("(", "")
-                       .replace(")", "")
+                        .replace("-", "_")
+                        .replace("/", "_")
+                        .replace(".", "_")
+                        .replace("(", "")
+                        .replace(")", "")
                 )
 
                 # Si commence par chiffre → préfixer

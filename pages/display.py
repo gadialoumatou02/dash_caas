@@ -5,7 +5,9 @@ import pandas as pd
 import plotly.express as px
 import io
 
-st.header("📊 Dashboard - Affichage")
+
+
+st.header("Affichage")
 
 # =============================
 # INIT SESSION STATE
@@ -76,11 +78,11 @@ def kpi_row_cards(df_filtered: pd.DataFrame, key_prefix: str = "meta_kpi"):
             f"""
             <div style="padding:12px;border:1px solid rgba(255,255,255,0.15);
                         border-radius:12px;">
-              <div style="font-size:0.85rem;opacity:0.8;">Colonnes clés</div>
-              <div style="font-size:1.05rem;font-weight:600;white-space:nowrap;
-                          overflow:hidden;text-overflow:ellipsis;">
+                <div style="font-size:0.85rem;opacity:0.8;">Colonnes clés</div>
+                <div style="font-size:1.05rem;font-weight:600;white-space:nowrap;
+                            overflow:hidden;text-overflow:ellipsis;">
                 {key_cols_str}
-              </div>
+                </div>
             </div>
             """,
             unsafe_allow_html=True,
